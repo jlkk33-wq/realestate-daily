@@ -21,7 +21,15 @@ jobs:
         env:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: python scripts/fetch.py
+      - name: 시장 지표 받기 (한국은행·한국부동산원)
+        if: always()
+        continue-on-error: true
+        env:
+          ECOS_KEY: ${{ secrets.ECOS_KEY }}
+          RONE_KEY: ${{ secrets.RONE_KEY }}
+        run: python scripts/fetch_market.py
       - name: 바뀐 데이터 저장
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
