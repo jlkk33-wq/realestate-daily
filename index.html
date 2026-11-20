@@ -30,7 +30,7 @@ h2{font-size:15px;margin:22px 0 8px}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
 .big{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
 .kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:12.5px;margin-top:10px;font-variant-numeric:tabular-nums}
-.kv div{display:flex;justify-content:space-between;gap:6px}.kv span:first-child{color:var(--muted)}
+.kv div{display:flex;justify-content:space-between;gap:6px;white-space:nowrap}.kv span:first-child{color:var(--muted)}
 .ok{color:var(--ok)}.bad{color:var(--bad)}.muted{color:var(--muted)}
 .chart{position:relative;width:100%}
 .chart svg{display:block;width:100%;height:auto}
@@ -60,8 +60,10 @@ label.f{display:block;font-size:13px;margin:12px 0 4px}
 input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-size:16px}
 .btn{display:inline-block;margin-top:12px;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:14px}
 .links{display:flex;flex-wrap:wrap;gap:8px}.links a{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--fg);text-decoration:none;background:var(--panel)}
+.tw{overflow-x:auto}.tbl{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}.tbl th,.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.tbl th:first-child,.tbl td:first-child{text-align:left}.tbl th{color:var(--muted);font-weight:500}.tbl tr:last-child td{border-bottom:0}
+.chips.seg button{padding:8px 16px;font-size:13.5px}
 .err{background:#fdecea;color:#8a1f11;border-radius:10px;padding:10px;font-size:13px}
-@media (min-width:640px){.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cards3 .card{margin:0}.mk{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:640px){.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cards3 .card{margin:0}.cards3 .kv{grid-template-columns:1fr}.mk{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
@@ -75,9 +77,15 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
 
   <section id="tab-home">
     <p class="lead" id="lead">—</p>
-    <h2>관심 단지 (최근 6개월, 84㎡)</h2>
+    <div class="chips" id="chipTypeHome"></div>
+    <h2>관심 단지 (최근 6개월, <span class="typeLabel">84㎡</span>)</h2>
     <p class="sub">매매는 해제 제외 중위가, 전세는 신규 계약 중위가</p>
     <div class="cards3" id="cards"></div>
+    <div id="listingWrap" hidden>
+      <h2>매물 수 추이</h2>
+      <p class="sub" id="listingSub">네이버부동산 기준 · 매일 아침 기록</p>
+      <div class="card"><div class="chart" id="chListing"></div></div>
+    </div>
     <h2>최근 7일 새 실거래</h2>
     <div class="card list" id="newDeals"></div>
     <h2>매매 실거래 추이</h2>
@@ -89,10 +97,36 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
   </section>
 
   <section id="tab-deals" hidden>
-    <h2>실거래 내역</h2>
-    <div class="chips" id="chipKind"></div>
-    <div class="chips" id="chipApt"></div>
-    <div class="card list" id="dealList"></div>
+    <div class="chips seg" id="chipArea"></div>
+    <div id="areaJangan">
+      <h2>장안동 관심 단지 실거래</h2>
+      <div class="chips" id="chipKind"></div>
+      <div class="chips" id="chipApt"></div>
+      <div class="chips" id="chipTypeDeals"></div>
+      <div class="card list" id="dealList"></div>
+    </div>
+    <div id="areaGJ" hidden>
+      <h2>광진구 구의·광장동 전세</h2>
+      <p class="sub" id="gjSub">최근 6개월 · 59~86㎡ · 8억 이하 · 2건 이상</p>
+      <div class="chips" id="chipDong"></div>
+      <div class="card list" id="gjList"></div>
+    </div>
+  </section>
+
+  <section id="tab-analysis" hidden>
+    <div class="chips" id="chipTypeAna"></div>
+    <h2>층별 매매가 (최근 12개월)</h2>
+    <p class="sub">저층 1~5층 · 중층 6~15층 · 고층 16층 이상 · 해제 제외 중위가(억), 괄호는 건수</p>
+    <div class="card tw"><table class="tbl" id="floorTbl"></table></div>
+    <h2>평형 비교 (최근 6개월)</h2>
+    <p class="sub">59㎡대와 84㎡대 매매·신규 전세 중위가(억)</p>
+    <div class="card tw"><table class="tbl" id="typeTbl"></table></div>
+    <h2>예산 안에서 실제 거래된 집 (최근 6개월)</h2>
+    <p class="sub" id="budgetSub">설정에서 매매 예산을 넣으면 보여드려요</p>
+    <div class="card list" id="budgetList"></div>
+    <h2>시장 분위기 (장안동)</h2>
+    <p class="sub">월별 매매 거래량과 해제 비율. 거래가 줄고 해제가 늘면 매수세가 약해지는 신호예요</p>
+    <div class="card"><div class="chart" id="chMood"></div><p class="sub" id="moodNote" style="margin:8px 0 0"></p></div>
   </section>
 
   <section id="tab-market" hidden>
@@ -112,12 +146,7 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
     </ul></div>
   </section>
 
-  <section id="tab-gj" hidden>
-    <h2>광진구 구의·광장동 전세</h2>
-    <p class="sub" id="gjSub">최근 6개월 · 59~86㎡ · 8억 이하 · 2건 이상</p>
-    <div class="chips" id="chipDong"></div>
-    <div class="card list" id="gjList"></div>
-  </section>
+
 
   <section id="tab-set" hidden>
     <h2>설정</h2>
@@ -146,15 +175,20 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
 <nav id="nav">
   <button data-tab="home" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>요약</button>
   <button data-tab="deals"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>실거래</button>
+  <button data-tab="analysis"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg>분석</button>
   <button data-tab="market"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/></svg>시장</button>
-  <button data-tab="gj"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>광진구</button>
+
   <button data-tab="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
 </nav>
 
 <script>
 const APTS = ['장안힐스테이트', '래미안장안2차', '장안현대홈타운1차'];
 const COLORS = ['var(--c0)', 'var(--c1)', 'var(--c2)'];
-const S = { kind: '전체', apt: '전체', dong: '전체' };
+const S = { kind: '전체', apt: '전체', dong: '전체', type: '84', area: '장안동' };
+const TL = () => S.type === '84' ? '84㎡' : '59㎡';
+const DT = () => D.deals.filter((d) => d.type === S.type);
+const JT = () => D.jeonse.filter((d) => d.type === S.type);
+const typeChips = (box) => chips(box, ['84㎡', '59㎡'], null, render, (o) => o === TL(), (o) => { S.type = o.slice(0, 2); });
 let D = null;
 
 const $ = (id) => document.getElementById(id);
@@ -167,11 +201,13 @@ const store = { get(k) { try { const v = localStorage.getItem(k); return v === n
 const budget = () => ({ buy: store.get('budgetBuy'), jeonse: store.get('budgetJeonse') });
 
 async function load() {
-  const names = ['deals84', 'jeonse84', 'volume', 'gwangjin', 'market', 'meta'];
+  const names = ['deals', 'jeonse', 'volume', 'gwangjin', 'market', 'meta'];
+  const optional = ['indicators', 'listings'];
   const v = Date.now();
   try {
     const res = await Promise.all(names.map((n) => fetch(`data/${n}.json?v=${v}`).then((r) => { if (!r.ok) throw new Error(n); return r.json(); })));
-    D = Object.fromEntries(names.map((n, i) => [n, res[i]]));
+    const opt = await Promise.all(optional.map((n) => fetch(`data/${n}.json?v=${v}`).then((r) => r.ok ? r.json() : null).catch(() => null)));
+    D = Object.fromEntries(names.map((n, i) => [n, res[i]]).concat(optional.map((n, i) => [n, opt[i]])));
     $('err').replaceChildren();
     render();
   } catch (e) {
@@ -182,9 +218,9 @@ async function load() {
 function summary() {
   const from = kstDate(183);
   return APTS.map((apt) => {
-    const t = D.deals84.filter((d) => d.apt === apt && d.canceled === 'N' && d.date >= from).map((d) => d.price);
-    const j = D.jeonse84.filter((d) => d.apt === apt && d.contract !== '갱신' && d.date >= from).map((d) => d.deposit);
-    const last = D.deals84.find((d) => d.apt === apt && d.canceled === 'N');
+    const t = DT().filter((d) => d.apt === apt && d.canceled === 'N' && d.date >= from).map((d) => d.price);
+    const j = JT().filter((d) => d.apt === apt && d.contract !== '갱신' && d.date >= from).map((d) => d.deposit);
+    const last = DT().find((d) => d.apt === apt && d.canceled === 'N');
     const tm = med(t), jm = med(j);
     return { apt, tradeN: t.length, tradeMed: tm && eok(tm), tradeMax: t.length ? eok(Math.max(...t)) : null, jeonseN: j.length, jeonseMed: jm && eok(jm), ratio: tm && jm ? jm / tm * 100 : null, last };
   });
@@ -195,7 +231,8 @@ function render() {
   $('upd').textContent = '갱신 ' + m;
   const B = budget();
   document.querySelectorAll('.budgetNote').forEach((n) => { const v = B[n.dataset.k]; n.textContent = v ? ` · 점선은 예산 ${v}억` : ''; });
-  renderHome(B); renderDeals(); renderMarket(); renderGJ(B);
+  document.querySelectorAll('.typeLabel').forEach((n) => { n.textContent = TL(); });
+  renderHome(B); renderDeals(); renderAnalysis(B); renderMarket(); renderGJ(B);
   $('bBuy').value = B.buy ?? ''; $('bJeonse').value = B.jeonse ?? '';
 }
 
@@ -205,12 +242,14 @@ function renderHome(B) {
   const lead = $('lead');
   if (rows.length) {
     const lo = rows.reduce((a, b) => a.tradeMed <= b.tradeMed ? a : b), hi = rows.reduce((a, b) => a.tradeMed >= b.tradeMed ? a : b);
-    let txt = `최근 6개월 84㎡ 매매 중위가는 ${f2(lo.tradeMed)}억(${lo.apt})~${f2(hi.tradeMed)}억(${hi.apt})입니다.`;
+    let txt = `최근 6개월 ${TL()} 매매 중위가는 ${f2(lo.tradeMed)}억(${lo.apt})~${f2(hi.tradeMed)}억(${hi.apt})입니다.`;
     if (B.buy) { const u = rows.filter((r) => r.tradeMed <= B.buy); txt += u.length ? ` 예산 ${B.buy}억 안에 드는 곳은 ${u.map((r) => r.apt).join('·')}.` : ` 세 단지 모두 예산 ${B.buy}억을 넘어요.`; }
     else txt += ' 설정에서 예산을 넣으면 예산 대비 차이도 보여드려요.';
     lead.textContent = txt;
-  } else lead.textContent = '최근 6개월 84㎡ 매매 거래가 없어요.';
+  } else lead.textContent = `최근 6개월 ${TL()} 매매 거래가 없어요.`;
 
+  typeChips($('chipTypeHome'));
+  renderListings();
   const cards = $('cards'); cards.replaceChildren();
   s.forEach((r, i) => {
     const c = el('div', 'card');
@@ -231,8 +270,8 @@ function renderHome(B) {
   if (!recent.length) box.append(el('p', 'muted', '최근 7일 안에 계약된 새 실거래는 아직 없어요. (실거래는 계약 후 30일 안에 신고돼서 늦게 올라올 수 있어요)'));
   recent.forEach((d) => box.append(dealRow(d, wk)));
 
-  lineChart($('chTrade'), monthly(D.deals84.filter((d) => d.canceled === 'N'), 'price'), B.buy);
-  lineChart($('chJeonse'), monthly(D.jeonse84.filter((d) => d.contract !== '갱신'), 'deposit'), B.jeonse);
+  lineChart($('chTrade'), monthly(DT().filter((d) => d.canceled === 'N'), 'price'), B.buy);
+  lineChart($('chJeonse'), monthly(JT().filter((d) => d.contract !== '갱신'), 'deposit'), B.jeonse);
 }
 
 function monthly(rows, field) {
@@ -242,8 +281,8 @@ function monthly(rows, field) {
 }
 
 function allDeals() {
-  return D.deals84.map((d) => ({ ...d, kind: '매매', amt: d.price, note: d.canceled === 'Y' ? '해제' : '' }))
-    .concat(D.jeonse84.map((d) => ({ ...d, kind: '전세', amt: d.deposit, note: d.contract === '-' ? '' : d.contract })))
+  return DT().map((d) => ({ ...d, kind: '매매', amt: d.price, note: d.canceled === 'Y' ? '해제' : '' }))
+    .concat(JT().map((d) => ({ ...d, kind: '전세', amt: d.deposit, note: d.contract === '-' ? '' : d.contract })))
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
@@ -257,12 +296,15 @@ function dealRow(d, wk) {
   return r;
 }
 
-function chips(box, opts, key, onChange) {
+function chips(box, opts, key, onChange, isOn, setter) {
   box.replaceChildren();
-  opts.forEach((o) => { const b = el('button', S[key] === o ? 'on' : '', o); b.onclick = () => { S[key] = o; onChange(); }; box.append(b); });
+  opts.forEach((o) => { const on = isOn ? isOn(o) : S[key] === o; const b = el('button', on ? 'on' : '', o); b.onclick = () => { setter ? setter(o) : (S[key] = o); onChange(); }; box.append(b); });
 }
 
 function renderDeals() {
+  chips($('chipArea'), ['장안동', '광진구 전세'], null, renderDeals, (o) => o.startsWith(S.area), (o) => { S.area = o.slice(0, 3); });
+  $('areaJangan').hidden = S.area !== '장안동'; $('areaGJ').hidden = S.area === '장안동';
+  typeChips($('chipTypeDeals'));
   chips($('chipKind'), ['전체', '매매', '전세'], 'kind', renderDeals);
   chips($('chipApt'), ['전체', ...APTS], 'apt', renderDeals);
   const wk = kstDate(7);
@@ -303,13 +345,73 @@ function renderGJ(B) {
   });
 }
 
+function renderListings() {
+  const L = D.listings;
+  $('listingWrap').hidden = !(L && L.length);
+  if (!L || !L.length) return;
+  const rows = L.filter((r) => r.type === S.type && r.kind === '매매').map((r) => ({ apt: r.apt, month: r.date, v: +r.count, n: r.minPrice ? '최저 ' + f2(eok(r.minPrice)) + '억' : '' }));
+  $('listingSub').textContent = `네이버부동산 ${TL()} 매매 매물 수 · 최근 기록 ${L[L.length - 1].date}`;
+  lineChart($('chListing'), rows, null, { unit: '건', x: 'date', fmt: (v) => String(v) });
+}
+
+function renderAnalysis(B) {
+  typeChips($('chipTypeAna'));
+  const y1 = kstDate(365), m6 = kstDate(183);
+  const band = (f) => f <= 5 ? '저층' : f <= 15 ? '중층' : '고층';
+  // 층별
+  const ft = $('floorTbl'); ft.replaceChildren();
+  const hd = el('tr'); ['단지', '저층', '중층', '고층'].forEach((h) => hd.append(el('th', null, h))); ft.append(hd);
+  APTS.forEach((a) => {
+    const tr = el('tr'); tr.append(el('td', null, a));
+    ['저층', '중층', '고층'].forEach((b) => {
+      const v = DT().filter((d) => d.apt === a && d.canceled === 'N' && d.date >= y1 && band(d.floor) === b).map((d) => d.price);
+      tr.append(el('td', null, v.length ? `${f2(eok(med(v)))} (${v.length})` : '—'));
+    });
+    ft.append(tr);
+  });
+  // 평형 비교
+  const tt = $('typeTbl'); tt.replaceChildren();
+  const h2 = el('tr'); ['단지', '59 매매', '84 매매', '59 전세', '84 전세'].forEach((h) => h2.append(el('th', null, h))); tt.append(h2);
+  APTS.forEach((a) => {
+    const tr = el('tr'); tr.append(el('td', null, a));
+    const cell = (rows, f) => { const v = rows.map((d) => d[f]); return v.length ? `${f2(eok(med(v)))} (${v.length})` : '—'; };
+    ['59', '84'].forEach((t) => tr.append(el('td', null, cell(D.deals.filter((d) => d.apt === a && d.type === t && d.canceled === 'N' && d.date >= m6), 'price'))));
+    ['59', '84'].forEach((t) => tr.append(el('td', null, cell(D.jeonse.filter((d) => d.apt === a && d.type === t && d.contract !== '갱신' && d.date >= m6), 'deposit'))));
+    tt.append(tr);
+  });
+  // 예산 안 거래
+  const bl = $('budgetList'); bl.replaceChildren();
+  if (B.buy) {
+    const rows = D.deals.filter((d) => d.canceled === 'N' && d.date >= m6 && eok(d.price) <= B.buy);
+    $('budgetSub').textContent = `매매 ${B.buy}억 이하로 거래된 ${rows.length}건 (59·84㎡ 모두)`;
+    const g = {};
+    rows.forEach((d) => { const k = `${d.apt}|${d.type}|${band(d.floor)}`; (g[k] = g[k] || []).push(d.price); });
+    const list = Object.entries(g).sort((a, b) => b[1].length - a[1].length);
+    if (!list.length) bl.append(el('p', 'muted', '최근 6개월 동안 예산 안에서 거래된 집이 없어요.'));
+    list.forEach(([k, v]) => { const [apt, t, b] = k.split('|'); const r = el('div', 'row'); r.append(el('div', 't', `${apt} ${t}㎡ ${b}`), el('div', 'amt', `${v.length}건`)); r.append(el('div', 'm', `중위 ${f2(eok(med(v)))}억 · 최저 ${f2(eok(Math.min(...v)))}억 · 최고 ${f2(eok(Math.max(...v)))}억`), el('div')); bl.append(r); });
+  } else { $('budgetSub').textContent = '설정에서 매매 예산을 넣으면 보여드려요'; }
+  // 시장 분위기
+  const I = D.indicators;
+  if (I && I.length) {
+    barChart($('chMood'), I.map((r) => ({ month: r.month, count: r.dong, rate: r.dong + r.dongCanceled ? r.dongCanceled / (r.dong + r.dongCanceled) * 100 : 0 })), true);
+    const last3 = I.slice(-4, -1), prev3 = I.slice(-7, -4);
+    const sum = (a, f) => a.reduce((s, r) => s + r[f], 0);
+    if (prev3.length === 3) {
+      const a = sum(last3, 'dong'), b = sum(prev3, 'dong');
+      const cr = (a2) => { const c = sum(a2, 'dongCanceled'), t = sum(a2, 'dong') + c; return t ? c / t * 100 : 0; };
+      $('moodNote').textContent = `직전 3개월(${last3[0].month}~${last3[2].month}) 거래 ${a}건, 그 전 3개월 ${b}건 대비 ${b ? ((a - b) / b * 100).toFixed(0) : '—'}% · 해제 비율 ${cr(last3).toFixed(1)}% (그 전 ${cr(prev3).toFixed(1)}%)`;
+    }
+  } else { $('chMood').replaceChildren(el('p', 'muted', '다음 자동 갱신 후부터 표시돼요.')); $('moodNote').textContent = ''; }
+}
+
 /* ---- 차트 (외부 라이브러리 없이 SVG) ---- */
 const NS = 'http://www.w3.org/2000/svg';
 const sv = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.append(e); return e; };
 function niceTicks(lo, hi, n) { const step0 = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(step0))), step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= step0); const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6)); return out; }
 function tooltip(box) { const t = el('div', 'tip'); t.hidden = true; box.append(t); return (txt, x, y) => { if (txt == null) { t.hidden = true; return; } t.hidden = false; t.textContent = txt; const w = box.clientWidth; t.style.left = Math.max(0, Math.min(x - t.offsetWidth / 2, w - t.offsetWidth)) + 'px'; t.style.top = Math.max(0, y - 38) + 'px'; }; }
 
-function lineChart(box, rows, budgetLine) {
+function lineChart(box, rows, budgetLine, opts) {
+  opts = opts || {};
   box.replaceChildren();
   if (!rows.length) { box.append(el('p', 'muted', '데이터 없음')); return; }
   const lg = el('div', 'legend'); APTS.forEach((a, i) => { const s = el('span'); const d = el('span', 'dot'); d.style.background = COLORS[i]; s.append(d, ' ' + a); lg.append(s); }); box.append(lg);
@@ -323,18 +425,18 @@ function lineChart(box, rows, budgetLine) {
   const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '단지별 월별 중위가 추이' }, box);
   ticks.forEach((t) => { sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--grid)' }, svg); sv('text', { x: m.l - 4, y: y(t) + 3, 'text-anchor': 'end' }, svg).textContent = t; });
   const every = Math.ceil(months.length / Math.max(2, Math.floor(W / 70)));
-  months.forEach((mo, i) => { if (i % every === 0 || i === months.length - 1) sv('text', { x: x(mo), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = mo.slice(2).replace('-', '.'); });
+  months.forEach((mo, i) => { if (i % every === 0 || i === months.length - 1) sv('text', { x: x(mo), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = mo.length > 7 ? mo.slice(5).replace('-', '/') : mo.slice(2).replace('-', '.'); });
   if (budgetLine) { sv('line', { x1: m.l, x2: W - m.r, y1: y(budgetLine), y2: y(budgetLine), stroke: 'var(--muted)', 'stroke-dasharray': '4 4' }, svg); sv('text', { x: W - m.r, y: y(budgetLine) - 4, 'text-anchor': 'end' }, svg).textContent = '예산 ' + budgetLine + '억'; }
   const tip = tooltip(box);
   APTS.forEach((a, i) => {
     const s = rows.filter((r) => r.apt === a);
     if (!s.length) return;
     sv('path', { d: s.map((r, k) => (k ? 'L' : 'M') + x(r.month) + ',' + y(r.v)).join(''), fill: 'none', stroke: COLORS[i], 'stroke-width': 2, style: `stroke:${COLORS[i]}` }, svg);
-    s.forEach((r) => { const c = sv('circle', { cx: x(r.month), cy: y(r.v), r: 4, style: `fill:${COLORS[i]}` }, svg); const show = () => { const bb = svg.getBoundingClientRect(), sc = bb.width / W; tip(`${a} · ${r.month} · ${f2(r.v)}억 (${r.n}건)`, x(r.month) * sc, y(r.v) * sc + lg.offsetHeight + 6); }; c.addEventListener('pointerenter', show); c.addEventListener('click', show); c.addEventListener('pointerleave', () => tip(null)); });
+    s.forEach((r) => { const c = sv('circle', { cx: x(r.month), cy: y(r.v), r: 4, style: `fill:${COLORS[i]}` }, svg); const show = () => { const bb = svg.getBoundingClientRect(), sc = bb.width / W; tip(opts.unit ? `${a} · ${r.month} · ${r.v}${opts.unit} ${r.n || ''}` : `${a} · ${r.month} · ${f2(r.v)}억 (${r.n}건)`, x(r.month) * sc, y(r.v) * sc + lg.offsetHeight + 6); }; c.addEventListener('pointerenter', show); c.addEventListener('click', show); c.addEventListener('pointerleave', () => tip(null)); });
   });
 }
 
-function barChart(box, rows) {
+function barChart(box, rows, withRate) {
   box.replaceChildren();
   const W = Math.max(280, box.clientWidth), H = 190, m = { t: 8, r: 6, b: 22, l: 30 };
   const hi = Math.max(...rows.map((r) => r.count)); const ticks = niceTicks(0, hi, 4); const top = Math.max(hi, ticks[ticks.length - 1]);
@@ -350,6 +452,13 @@ function barChart(box, rows) {
     b.addEventListener('pointerenter', show); b.addEventListener('click', show); b.addEventListener('pointerleave', () => tip(null));
     if (i % every === 0) sv('text', { x: m.l + i * bw + bw / 2, y: H - 6, 'text-anchor': 'middle' }, svg).textContent = r.month.slice(2).replace('-', '.');
   });
+  if (withRate) {
+    const rmax = Math.max(10, ...rows.map((r) => r.rate));
+    const ry = (v) => m.t + (1 - v / rmax) * (H - m.t - m.b);
+    sv('path', { d: rows.map((r, i) => (i ? 'L' : 'M') + (m.l + i * bw + bw / 2) + ',' + ry(r.rate)).join(''), fill: 'none', style: 'stroke:var(--c1)', 'stroke-width': 2 }, svg);
+    rows.forEach((r, i) => { const c = sv('circle', { cx: m.l + i * bw + bw / 2, cy: ry(r.rate), r: 3, style: 'fill:var(--c1)' }, svg); const show = () => { const sc = svg.getBoundingClientRect().width / W; tip(`${r.month} · 거래 ${r.count}건 · 해제 ${r.rate.toFixed(1)}%`, (m.l + i * bw + bw / 2) * sc, ry(r.rate) * sc); }; c.addEventListener('pointerenter', show); c.addEventListener('click', show); c.addEventListener('pointerleave', () => tip(null)); });
+    const lg = el('div', 'legend'); const a = el('span'); const d1 = el('span', 'dot'); d1.style.background = 'var(--c0)'; a.append(d1, ' 거래량(건)'); const b = el('span'); const d2 = el('span', 'dot'); d2.style.background = 'var(--c1)'; b.append(d2, ` 해제 비율(%, 최대 ${rmax.toFixed(0)}%)`); lg.append(a, b); box.prepend(lg);
+  }
 }
 
 /* ---- 탭, 설정, 앱 설치 ---- */
@@ -371,7 +480,7 @@ let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() 
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 const start = location.hash.slice(1);
-if (['home', 'deals', 'market', 'gj', 'set'].includes(start)) show(start);
+if (['home', 'deals', 'analysis', 'market', 'set'].includes(start)) show(start);
 load();
 </script>
 </body>

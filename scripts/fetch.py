@@ -23,6 +23,7 @@ TARGETS = {
     "장안현대홈타운(336)": "장안현대홈타운1차",
 }
 AREA84 = (78, 86)          # 래미안장안2차 81㎡ 포함
+AREA59 = (54, 66)          # 59㎡대 (래미안장안2차는 54·65㎡)
 GJ_AREA = (59, 86)
 GJ_MAX_DEPOSIT = 80000     # 만원 (광진구 전세 표시 상한)
 MONTHS = 24
@@ -78,27 +79,51 @@ dt = lambda o: f"{o['dealYear']}-{int(o['dealMonth']):02d}-{int(o['dealDay']):02
 
 def main():
     months = month_list(MONTHS)
-    tr, rd, rg = [], [], []
+    tr, rd, rg, tr_all = [], [], [], []
     for i, ym in enumerate(months):
-        tr += [o for o in fetch("RTMSDataSvcAptTrade", "11230", ym) if o.get("umdNm") == "장안동"]
+        t = fetch("RTMSDataSvcAptTrade", "11230", ym)
+        tr_all += t
+        tr += [o for o in t if o.get("umdNm") == "장안동"]
         rd += [o for o in fetch("RTMSDataSvcAptRent", "11230", ym) if o.get("umdNm") == "장안동"]
         if i < GJ_MONTHS:
             rg += [o for o in fetch("RTMSDataSvcAptRent", "11215", ym) if o.get("umdNm") in ("구의동", "광장동")]
         print(ym, len(tr), len(rd), len(rg), flush=True)
 
-    in84 = lambda o: AREA84[0] <= num(o.get("excluUseAr")) <= AREA84[1]
+    def ptype(o):
+        a = num(o.get("excluUseAr"))
+        if AREA84[0] <= a <= AREA84[1]:
+            return "84"
+        if AREA59[0] <= a <= AREA59[1]:
+            return "59"
+        return None
+
     deals = sorted(({
-        "date": dt(o), "apt": TARGETS[o["aptNm"]], "area": num(o["excluUseAr"]),
+        "date": dt(o), "apt": TARGETS[o["aptNm"]], "type": ptype(o), "area": num(o["excluUseAr"]),
         "floor": int(num(o.get("floor"))), "price": int(num(o["dealAmount"])),
         "canceled": "Y" if o.get("cdealType") else "N",
-    } for o in tr if o.get("aptNm") in TARGETS and in84(o)), key=lambda x: x["date"], reverse=True)
+    } for o in tr if o.get("aptNm") in TARGETS and ptype(o)), key=lambda x: x["date"], reverse=True)
 
     jeonse = sorted(({
-        "date": dt(o), "apt": TARGETS[o["aptNm"]], "area": num(o["excluUseAr"]),
+        "date": dt(o), "apt": TARGETS[o["aptNm"]], "type": ptype(o), "area": num(o["excluUseAr"]),
         "floor": int(num(o.get("floor"))), "deposit": int(num(o["deposit"])),
         "contract": o.get("contractType") or "-",
-    } for o in rd if o.get("aptNm") in TARGETS and in84(o) and num(o.get("monthlyRent")) == 0),
+    } for o in rd if o.get("aptNm") in TARGETS and ptype(o) and num(o.get("monthlyRent")) == 0),
         key=lambda x: x["date"], reverse=True)
+
+    # 시장 분위기 지표: 장안동·동대문구 월별 거래량, 해제 건수, 직거래 건수
+    ind = {}
+    for o in tr_all:
+        k = dt(o)[:7]
+        r = ind.setdefault(k, {"month": k, "gu": 0, "guCanceled": 0, "dong": 0, "dongCanceled": 0, "dongDirect": 0})
+        c = bool(o.get("cdealType"))
+        r["gu"] += 0 if c else 1
+        r["guCanceled"] += 1 if c else 0
+        if o.get("umdNm") == "장안동":
+            r["dong"] += 0 if c else 1
+            r["dongCanceled"] += 1 if c else 0
+            if not c and "직거래" in (o.get("dealingGbn") or ""):
+                r["dongDirect"] += 1
+    indicators = [ind[k] for k in sorted(ind)]
 
     vc = {}
     for o in tr:
@@ -122,10 +147,10 @@ def main():
     } for k, g in gm.items() if len(g["v"]) >= 2), key=lambda x: -x["deals"])
 
     # 비정상적으로 적으면 기존 파일을 지키고 실패 처리
-    if len(deals) < 100 or len(jeonse) < 100 or len(volume) < 18:
+    if len(deals) < 150 or len(jeonse) < 150 or len(volume) < 18:
         sys.exit(f"건수가 너무 적어 저장하지 않음: deals={len(deals)} jeonse={len(jeonse)} volume={len(volume)}")
 
-    for name, rows in [("deals84", deals), ("jeonse84", jeonse), ("volume", volume), ("gwangjin", gwangjin)]:
+    for name, rows in [("deals", deals), ("jeonse", jeonse), ("volume", volume), ("gwangjin", gwangjin), ("indicators", indicators)]:
         with open(os.path.join(OUT, name + ".json"), "w", encoding="utf-8") as f:
             json.dump(rows, f, ensure_ascii=False)
     with open(os.path.join(OUT, "meta.json"), "w", encoding="utf-8") as f:
