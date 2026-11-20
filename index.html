@@ -130,8 +130,22 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
   </section>
 
   <section id="tab-market" hidden>
-    <h2>시장 지표</h2>
-    <p class="sub">금리 · 주간 시세 · 대출 규제</p>
+    <div id="autoWrap" hidden>
+      <h2>금리</h2>
+      <p class="sub" id="autoSub">한국은행 ECOS · 매일 자동 갱신</p>
+      <div class="mk" id="mkRate"></div>
+      <div class="card" style="margin-top:10px"><div class="chart" id="chRate"></div></div>
+      <h2>주간 아파트 가격 (한국부동산원)</h2>
+      <p class="sub">전주 대비 변동률(%) · 매주 목요일 발표</p>
+      <div class="mk" id="mkWeekly"></div>
+      <div class="card" style="margin-top:10px"><p class="sub" style="margin:0 0 6px">매매가격 주간 변동률 (최근 26주)</p><div class="chart" id="chWeekly"></div></div>
+      <div class="card"><p class="sub" style="margin:0 0 6px">전세가격 주간 변동률 (최근 26주)</p><div class="chart" id="chWeeklyJ"></div></div>
+      <h2>매매수급동향</h2>
+      <p class="sub">100보다 낮으면 사려는 사람보다 팔려는 사람이 많다는 뜻이에요 (0~200)</p>
+      <div class="card"><div class="chart" id="chSupply"></div></div>
+    </div>
+    <h2 id="manualTitle">시장 지표</h2>
+    <p class="sub" id="manualSub">금리 · 주간 시세 · 대출 규제</p>
     <div class="mk" id="market"></div>
     <h2>장안동 아파트 매매 거래량</h2>
     <p class="sub">월별 신고 건수 (당월은 신고 기한 때문에 적게 잡힘)</p>
@@ -202,7 +216,7 @@ const budget = () => ({ buy: store.get('budgetBuy'), jeonse: store.get('budgetJe
 
 async function load() {
   const names = ['deals', 'jeonse', 'volume', 'gwangjin', 'market', 'meta'];
-  const optional = ['indicators', 'listings'];
+  const optional = ['indicators', 'listings', 'market_auto'];
   const v = Date.now();
   try {
     const res = await Promise.all(names.map((n) => fetch(`data/${n}.json?v=${v}`).then((r) => { if (!r.ok) throw new Error(n); return r.json(); })));
@@ -314,9 +328,53 @@ function renderDeals() {
   rows.forEach((d) => box.append(dealRow(d, wk)));
 }
 
+function mkCard(box, group, title, value, sub, note) {
+  const c = el('div', 'card');
+  c.append(el('div', 'm muted', group), el('h3', null, title), el('div', 'v', value));
+  if (sub) c.append(el('div', 'n', sub));
+  if (note) c.append(el('div', 'n', note));
+  box.append(c);
+}
+const sgn = (v, d = 2) => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(d);
+
+function renderAuto() {
+  const A = D.market_auto;
+  const has = !!(A && (A.ecos || A.rone));
+  $('autoWrap').hidden = !has;
+  if (!has) return false;
+  $('autoSub').textContent = `한국은행 ECOS · 갱신 ${A.updatedAt.replace('T', ' ').slice(0, 16)}` + (A.errors && A.errors.length ? ' · 일부 실패' : '');
+  const rb = $('mkRate'); rb.replaceChildren();
+  if (A.ecos) {
+    const E = A.ecos, br = E.baseRateLatest || E.baseRate[E.baseRate.length - 1];
+    const mr = E.mortgageRate, k = E.ktb3;
+    mkCard(rb, '한국은행 · ' + br.t, '기준금리', br.v.toFixed(2) + '%');
+    if (mr && mr.length) { const a = mr[mr.length - 1], b = mr[mr.length - 2]; mkCard(rb, '예금은행 신규취급 · ' + a.t, '주택담보대출 평균금리', a.v.toFixed(2) + '%', b ? `전월 ${b.v.toFixed(2)}% · ${sgn(a.v - b.v)}%p` : ''); }
+    if (k && k.length) { const a = k[k.length - 1], b = k[Math.max(0, k.length - 5)]; mkCard(rb, '시장금리 · ' + a.t, '국고채 3년', a.v.toFixed(3) + '%', `약 한 달 전 ${b.v.toFixed(3)}% · ${sgn(a.v - b.v, 3)}%p`, '고정형 주담대 금리의 기준이 돼요'); }
+    const series = [];
+    E.baseRate.forEach((r) => series.push({ apt: '기준금리', month: r.t, v: r.v }));
+    (mr || []).forEach((r) => series.push({ apt: '주담대 평균', month: r.t, v: r.v }));
+    lineChart($('chRate'), series, null, { names: ['기준금리', '주담대 평균'], unit: '%', fmt: (v) => v.toFixed(2) });
+  }
+  const wb = $('mkWeekly'); wb.replaceChildren();
+  if (A.rone) {
+    const W = A.rone, names = ['서울', '동대문구', '광진구'];
+    names.forEach((n) => { const s = W.sale[n] || []; const a = s[s.length - 1], b = s[s.length - 2]; if (a) mkCard(wb, '매매 · ' + a.date, n, sgn(a.chg) + '%', b ? `전주 ${sgn(b.chg)}%` : ''); });
+    names.forEach((n) => { const s = W.jeonse[n] || []; const a = s[s.length - 1], b = s[s.length - 2]; if (a) mkCard(wb, '전세 · ' + a.date, n, sgn(a.chg) + '%', b ? `전주 ${sgn(b.chg)}%` : ''); });
+    const pick = (obj) => names.flatMap((n) => (obj[n] || []).slice(-26).map((r) => ({ apt: n, month: r.date, v: r.chg })));
+    lineChart($('chWeekly'), pick(W.sale), null, { names, unit: '%', fmt: (v) => v.toFixed(2), zero: true });
+    lineChart($('chWeeklyJ'), pick(W.jeonse), null, { names, unit: '%', fmt: (v) => v.toFixed(2), zero: true });
+    const sn = ['서울', '동북권'];
+    lineChart($('chSupply'), sn.flatMap((n) => (W.supply[n] || []).slice(-26).map((r) => ({ apt: n, month: r.date, v: r.v }))), 100, { names: sn, unit: '', fmt: (v) => v.toFixed(1), refLabel: '기준 100' });
+  }
+  return true;
+}
+
 function renderMarket() {
+  const auto = renderAuto();
+  $('manualTitle').textContent = auto ? '대출 규제' : '시장 지표';
+  $('manualSub').textContent = auto ? '정책 변경 시 수동 갱신' : '금리 · 주간 시세 · 대출 규제';
   const box = $('market'); box.replaceChildren();
-  D.market.forEach((r) => {
+  D.market.filter((r) => !auto || r.group === '규제').forEach((r) => {
     const c = el('div', 'card');
     c.append(el('div', 'm muted', `${r.group} · ${r.asof}`));
     c.append(el('h3', null, r.indicator));
@@ -414,10 +472,11 @@ function lineChart(box, rows, budgetLine, opts) {
   opts = opts || {};
   box.replaceChildren();
   if (!rows.length) { box.append(el('p', 'muted', '데이터 없음')); return; }
-  const lg = el('div', 'legend'); APTS.forEach((a, i) => { const s = el('span'); const d = el('span', 'dot'); d.style.background = COLORS[i]; s.append(d, ' ' + a); lg.append(s); }); box.append(lg);
+  const NAMES = opts.names || APTS;
+  const lg = el('div', 'legend'); NAMES.forEach((a, i) => { const s = el('span'); const d = el('span', 'dot'); d.style.background = COLORS[i]; s.append(d, ' ' + a); lg.append(s); }); box.append(lg);
   const W = Math.max(280, box.clientWidth), H = 220, m = { t: 8, r: 10, b: 22, l: 34 };
   const months = [...new Set(rows.map((r) => r.month))].sort();
-  const vals = rows.map((r) => r.v).concat(budgetLine ? [budgetLine] : []);
+  const vals = rows.map((r) => r.v).concat(budgetLine ? [budgetLine] : []).concat(opts.zero ? [0] : []);
   let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || 0.5; lo -= pad; hi += pad;
   const ticks = niceTicks(lo, hi, 4); lo = Math.min(lo, ticks[0]); hi = Math.max(hi, ticks[ticks.length - 1]);
   const x = (mo) => m.l + (months.length < 2 ? 0 : months.indexOf(mo) / (months.length - 1)) * (W - m.l - m.r);
@@ -426,13 +485,14 @@ function lineChart(box, rows, budgetLine, opts) {
   ticks.forEach((t) => { sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--grid)' }, svg); sv('text', { x: m.l - 4, y: y(t) + 3, 'text-anchor': 'end' }, svg).textContent = t; });
   const every = Math.ceil(months.length / Math.max(2, Math.floor(W / 70)));
   months.forEach((mo, i) => { if (i % every === 0 || i === months.length - 1) sv('text', { x: x(mo), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = mo.length > 7 ? mo.slice(5).replace('-', '/') : mo.slice(2).replace('-', '.'); });
-  if (budgetLine) { sv('line', { x1: m.l, x2: W - m.r, y1: y(budgetLine), y2: y(budgetLine), stroke: 'var(--muted)', 'stroke-dasharray': '4 4' }, svg); sv('text', { x: W - m.r, y: y(budgetLine) - 4, 'text-anchor': 'end' }, svg).textContent = '예산 ' + budgetLine + '억'; }
+  if (budgetLine) { sv('line', { x1: m.l, x2: W - m.r, y1: y(budgetLine), y2: y(budgetLine), stroke: 'var(--muted)', 'stroke-dasharray': '4 4' }, svg); sv('text', { x: W - m.r, y: y(budgetLine) - 4, 'text-anchor': 'end' }, svg).textContent = opts.refLabel || ('예산 ' + budgetLine + '억'); }
+  if (opts.zero) sv('line', { x1: m.l, x2: W - m.r, y1: y(0), y2: y(0), stroke: 'var(--muted)', 'stroke-width': 0.8 }, svg);
   const tip = tooltip(box);
-  APTS.forEach((a, i) => {
+  NAMES.forEach((a, i) => {
     const s = rows.filter((r) => r.apt === a);
     if (!s.length) return;
     sv('path', { d: s.map((r, k) => (k ? 'L' : 'M') + x(r.month) + ',' + y(r.v)).join(''), fill: 'none', stroke: COLORS[i], 'stroke-width': 2, style: `stroke:${COLORS[i]}` }, svg);
-    s.forEach((r) => { const c = sv('circle', { cx: x(r.month), cy: y(r.v), r: 4, style: `fill:${COLORS[i]}` }, svg); const show = () => { const bb = svg.getBoundingClientRect(), sc = bb.width / W; tip(opts.unit ? `${a} · ${r.month} · ${r.v}${opts.unit} ${r.n || ''}` : `${a} · ${r.month} · ${f2(r.v)}억 (${r.n}건)`, x(r.month) * sc, y(r.v) * sc + lg.offsetHeight + 6); }; c.addEventListener('pointerenter', show); c.addEventListener('click', show); c.addEventListener('pointerleave', () => tip(null)); });
+    s.forEach((r) => { const c = sv('circle', { cx: x(r.month), cy: y(r.v), r: 4, style: `fill:${COLORS[i]}` }, svg); const show = () => { const bb = svg.getBoundingClientRect(), sc = bb.width / W; tip(opts.unit != null ? `${a} · ${r.month} · ${opts.fmt ? opts.fmt(r.v) : r.v}${opts.unit} ${r.n || ''}` : `${a} · ${r.month} · ${f2(r.v)}억 (${r.n}건)`, x(r.month) * sc, y(r.v) * sc + lg.offsetHeight + 6); }; c.addEventListener('pointerenter', show); c.addEventListener('click', show); c.addEventListener('pointerleave', () => tip(null)); });
   });
 }
 
