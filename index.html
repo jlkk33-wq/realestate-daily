@@ -62,6 +62,15 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
 .links{display:flex;flex-wrap:wrap;gap:8px}.links a{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--fg);text-decoration:none;background:var(--panel)}
 .tw{overflow-x:auto}.tbl{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}.tbl th,.tbl td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.tbl th:first-child,.tbl td:first-child{text-align:left}.tbl th{color:var(--muted);font-weight:500}.tbl tr:last-child td{border-bottom:0}
 .chips.seg button{padding:8px 16px;font-size:13.5px}
+.sig h3,.brief h3{justify-content:space-between}
+.sigsum{font-size:14.5px;line-height:1.55;margin:4px 0 8px}
+.sigrow{display:grid;grid-template-columns:22px 1fr auto;gap:2px 8px;align-items:start;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.sigrow .ic{font-size:15px;line-height:1.2}.sigrow .k{font-weight:600}.sigrow .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12px}
+.sigrow .why{grid-column:2/4;font-size:12px;color:var(--muted);line-height:1.45}
+.brief .bh{font-size:15px;font-weight:600;line-height:1.5;margin:6px 0 4px}
+.brief .sec{margin-top:10px}.brief .sec b{font-size:13px}.brief .sec p{margin:3px 0 0;font-size:13px;line-height:1.6}
+.brief details{margin-top:10px;font-size:13px}.brief summary{color:var(--accent);cursor:pointer}
+.brief .disc{font-size:11px;color:var(--muted);margin:12px 0 0;line-height:1.5}
 .err{background:#fdecea;color:#8a1f11;border-radius:10px;padding:10px;font-size:13px}
 @media (min-width:640px){.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cards3 .card{margin:0}.cards3 .kv{grid-template-columns:1fr}.mk{grid-template-columns:repeat(3,1fr)}}
 </style>
@@ -76,6 +85,18 @@ input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--l
   <div id="err"></div>
 
   <section id="tab-home">
+    <div class="card sig" id="sigCard">
+      <h3>오늘의 시장 신호등 <span class="muted" style="font-weight:400;font-size:11.5px">매수자 입장 · 자동 판정</span></h3>
+      <p class="sigsum" id="sigSum">—</p>
+      <div id="sigList"></div>
+    </div>
+    <div class="card brief" id="briefCard" hidden>
+      <h3>주간 브리핑 <span class="muted" id="briefDate" style="font-weight:400;font-size:11.5px"></span></h3>
+      <p class="bh" id="briefHead"></p>
+      <div id="briefBody"></div>
+      <details id="briefMore"><summary>시나리오 · 내 계획 관점 더 보기</summary><div id="briefMoreBody"></div></details>
+      <p class="disc">Claude가 공개 지표와 뉴스를 바탕으로 쓴 해석이에요. 전문 투자·법률 자문이 아니며, 실제 결정 전에 원문과 전문가 상담으로 확인하세요.</p>
+    </div>
     <p class="lead" id="lead">—</p>
     <div class="chips" id="chipTypeHome"></div>
     <h2>관심 단지 (최근 6개월, <span class="typeLabel">84㎡</span>)</h2>
@@ -216,7 +237,7 @@ const budget = () => ({ buy: store.get('budgetBuy'), jeonse: store.get('budgetJe
 
 async function load() {
   const names = ['deals', 'jeonse', 'volume', 'gwangjin', 'market', 'meta'];
-  const optional = ['indicators', 'listings', 'market_auto'];
+  const optional = ['indicators', 'listings', 'market_auto', 'briefing'];
   const v = Date.now();
   try {
     const res = await Promise.all(names.map((n) => fetch(`data/${n}.json?v=${v}`).then((r) => { if (!r.ok) throw new Error(n); return r.json(); })));
@@ -250,7 +271,80 @@ function render() {
   $('bBuy').value = B.buy ?? ''; $('bJeonse').value = B.jeonse ?? '';
 }
 
+function signals() {
+  const out = [];
+  const add = (key, level, val, why) => out.push({ key, level, val, why });
+  const A = D.market_auto;
+  // 1. 금리
+  if (A && A.ecos && A.ecos.ktb3 && A.ecos.ktb3.length > 4) {
+    const k = A.ecos.ktb3, a = k[k.length - 1].v, b = k[k.length - 5].v, d = a - b;
+    add('대출 금리 방향', d <= -0.1 ? 'g' : d >= 0.1 ? 'r' : 'y', `국고채3년 ${a.toFixed(2)}% (${sgn(d)}%p)`,
+      d <= -0.1 ? '시장금리가 한 달 새 내려 고정형 주담대 부담이 줄고 있어요.' : d >= 0.1 ? '시장금리가 오르고 있어 대출 이자 부담이 커지는 방향이에요.' : '시장금리가 한 달간 큰 변화 없이 움직이고 있어요.');
+  }
+  // 2. 동대문 매매 흐름
+  if (A && A.rone && A.rone.sale['동대문구']) {
+    const s = A.rone.sale['동대문구'].slice(-4).map((r) => r.chg), avg = s.reduce((x, y) => x + y, 0) / s.length;
+    add('동대문구 집값 흐름', avg <= 0 ? 'g' : avg <= 0.1 ? 'y' : 'r', `최근 4주 평균 ${sgn(avg)}%`,
+      avg <= 0 ? '하락 또는 보합이라 서두를 필요가 적고 가격 협상 여지가 생겨요.' : avg <= 0.1 ? '소폭 상승 중이에요. 급등은 아니라 추세를 지켜볼 구간이에요.' : '주간 0.1% 넘게 오르는 중이라 매수 가격 부담이 커지는 방향이에요.');
+  }
+  // 3. 매매수급
+  if (A && A.rone && A.rone.supply['동북권']) {
+    const v = A.rone.supply['동북권'].slice(-1)[0].v;
+    add('사려는 사람 vs 팔려는 사람', v < 95 ? 'g' : v <= 105 ? 'y' : 'r', `동북권 수급 ${v.toFixed(1)}`,
+      v < 95 ? '팔려는 사람이 더 많아요. 매수자에게 유리한 분위기예요.' : v <= 105 ? '사려는 사람과 팔려는 사람이 비슷해요.' : '사려는 사람이 더 많아요. 매도자 우위라 가격이 버티기 쉬워요.');
+  }
+  // 4. 거래량·해제
+  const I = D.indicators;
+  if (I && I.length > 7) {
+    const sum = (a, f) => a.reduce((x, r) => x + r[f], 0), l = I.slice(-4, -1), p = I.slice(-7, -4);
+    const a = sum(l, 'dong'), b = sum(p, 'dong'), ch = b ? (a - b) / b * 100 : 0;
+    add('장안동 거래량', ch < -20 ? 'g' : ch <= 20 ? 'y' : 'r', `직전 3개월 ${a}건 (${sgn(ch, 0)}%)`,
+      ch < -20 ? '거래가 크게 줄었어요. 관망세라 매수자 협상력이 커지는 구간이에요.' : ch <= 20 ? '거래량이 평소 수준이에요.' : '거래가 늘고 있어요. 매수세가 살아나는 신호예요.');
+  }
+  // 5. 관심 단지 실거래 추세
+  const t = D.deals.filter((d) => d.type === S.type && d.canceled === 'N');
+  const r3 = t.filter((d) => d.date >= kstDate(92)).map((d) => d.price), p3 = t.filter((d) => d.date < kstDate(92) && d.date >= kstDate(183)).map((d) => d.price);
+  if (r3.length >= 3 && p3.length >= 3) {
+    const ch = (med(r3) / med(p3) - 1) * 100;
+    add(`관심 3단지 ${TL()} 실거래`, ch < -2 ? 'g' : ch <= 2 ? 'y' : 'r', `3개월 중위 ${f2(eok(med(r3)))}억 (${sgn(ch, 1)}%)`,
+      ch < -2 ? '최근 3개월 실거래가가 직전 3개월보다 낮아졌어요.' : ch <= 2 ? '최근 실거래가가 직전 3개월과 비슷해요.' : '최근 3개월 실거래가가 직전 3개월보다 올랐어요.');
+  }
+  // 6. 전세 부담 (세입자 입장)
+  if (A && A.rone && A.rone.jeonse['광진구']) {
+    const avg = (n) => { const s = (A.rone.jeonse[n] || []).slice(-4).map((r) => r.chg); return s.length ? s.reduce((x, y) => x + y, 0) / s.length : 0; };
+    const v = Math.max(avg('동대문구'), avg('광진구'));
+    add('전세값 흐름 (이사 비용)', v <= 0.05 ? 'g' : v <= 0.15 ? 'y' : 'r', `동대문·광진 4주 평균 최대 ${sgn(v)}%`,
+      v <= 0.05 ? '전세가 안정적이에요.' : v <= 0.15 ? '전세가 꾸준히 오르고 있어요. 갱신을 지키는 게 유리해요.' : '전세가 빠르게 오르고 있어요. 갱신 확보가 중요해요.');
+  }
+  return out;
+}
+
+function renderSignals() {
+  const sg = signals(), list = $('sigList'); list.replaceChildren();
+  const icon = { g: '🟢', y: '🟡', r: '🔴' };
+  sg.forEach((x) => { const r = el('div', 'sigrow'); r.append(el('span', 'ic', icon[x.level]), el('span', 'k', x.key), el('span', 'val', x.val), el('span', 'why', x.why)); list.append(r); });
+  const buy = sg.filter((x) => !x.key.startsWith('전세'));
+  const g = buy.filter((x) => x.level === 'g').length, r = buy.filter((x) => x.level === 'r').length;
+  $('sigSum').textContent = !buy.length ? '지표를 모으는 중이에요.' : g >= r + 2 ? `매수자에게 유리한 신호가 많아요 (🟢${g} · 🔴${r}). 급매·저층 실거래를 눈여겨볼 시기예요.` : r >= g + 2 ? `매도자 우위 신호가 많아요 (🟢${g} · 🔴${r}). 가격이 쉽게 내려오지 않는 구간이에요.` : `신호가 엇갈려요 (🟢${g} · 🔴${r}). 방향이 정해질 때까지 지켜보는 구간이에요.`;
+}
+
+function renderBriefing() {
+  const b = D.briefing;
+  $('briefCard').hidden = !b;
+  if (!b) return;
+  $('briefDate').textContent = b.date + ' 작성';
+  $('briefHead').textContent = b.headline;
+  const body = $('briefBody'); body.replaceChildren();
+  (b.sections || []).forEach((x) => { const d = el('div', 'sec'); d.append(el('b', null, x.title), el('p', null, x.body)); body.append(d); });
+  const more = $('briefMoreBody'); more.replaceChildren();
+  if (b.scenarios) { const d = el('div', 'sec'); d.append(el('b', null, '시나리오 (6~12개월)')); [['기본', b.scenarios.base], ['하방', b.scenarios.bear], ['상방', b.scenarios.bull]].forEach(([k, v]) => v && d.append(el('p', null, `${k}: ${v}`))); more.append(d); }
+  if (b.plan && b.plan.length) { const d = el('div', 'sec'); d.append(el('b', null, '내 계획 관점')); b.plan.forEach((v) => d.append(el('p', null, '· ' + v))); more.append(d); }
+  if (b.watch && b.watch.length) { const d = el('div', 'sec'); d.append(el('b', null, '다음 주 체크할 것')); b.watch.forEach((v) => d.append(el('p', null, '· ' + v))); more.append(d); }
+  $('briefMore').hidden = !more.children.length;
+}
+
 function renderHome(B) {
+  renderSignals(); renderBriefing();
   const s = summary();
   const rows = s.filter((r) => r.tradeMed != null);
   const lead = $('lead');
