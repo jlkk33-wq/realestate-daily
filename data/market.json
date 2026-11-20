@@ -1,0 +1,11 @@
+[
+{"group":"금리","indicator":"한국은행 기준금리","value":3.00,"unit":"%","prev":3.00,"asof":"2026-10-22","note":"10월 동결. 11월 26일 결정 예정(0.25%p 인상 전망 있음)","source":"한국은행 금통위 (언론 보도)","url":"https://www.getnews.co.kr/news/articleView.html?idxno=886539"},
+{"group":"금리","indicator":"5대 은행 주담대 고정형 하단","value":4.46,"unit":"%","prev":4.67,"asof":"2026-11-06","note":"상단 6.44%. 10월 16일 4.67~6.73%에서 하락","source":"헤럴드경제","url":"https://biz.heraldcorp.com/article/10930530"},
+{"group":"금리","indicator":"5대 은행 주담대 변동형 상단","value":6.51,"unit":"%","prev":null,"asof":"2026-11-17","note":"변동형 상단이 5년 고정형 상단(6.40%)보다 높아진 역전 상태","source":"국제뉴스","url":"https://www.gukjenews.com/news/articleView.html?idxno=3755113"},
+{"group":"금리","indicator":"보금자리론 10년 (u-보금자리론)","value":5.10,"unit":"%","prev":5.00,"asof":"2026-11-09","note":"11월 0.1%p 인상, 올해 누적 6차례 인상","source":"한국주택금융공사","url":"https://www.hf.go.kr/ko/sub01/sub01_01_04.do"},
+{"group":"시세 흐름","indicator":"서울 아파트 매매 (주간)","value":0.03,"unit":"%","prev":0.07,"asof":"2026-11-16","note":"93주 연속 상승이지만 5주째 둔화, 7개 구 하락","source":"한국부동산원 주간 동향","url":"https://www.hankyung.com/article/2026111971346"},
+{"group":"시세 흐름","indicator":"동대문구 아파트 매매 (주간)","value":0.15,"unit":"%","prev":0.28,"asof":"2026-11-16","note":"전주 전농·장안동 위주 상승, 이번 주 폭 축소","source":"한국부동산원 주간 동향","url":"https://view.asiae.co.kr/article/2026111909562280077"},
+{"group":"시세 흐름","indicator":"광진구 아파트 매매 (주간)","value":0.04,"unit":"%","prev":0.07,"asof":"2026-11-16","note":"보합권 접근","source":"한국부동산원 주간 동향","url":"https://www.senmoney.co.kr/news/articleView.html?idxno=38733"},
+{"group":"시세 흐름","indicator":"서울 아파트 전세 (주간)","value":0.14,"unit":"%","prev":0.17,"asof":"2026-11-16","note":"매매는 둔화, 전세는 꾸준히 상승","source":"한국부동산원 주간 동향","url":"https://www.hankyung.com/article/2026111971346"},
+{"group":"규제","indicator":"서울 규제지역 무주택자 LTV","value":40,"unit":"%","prev":null,"asof":"2025-10-16","note":"서울 전역 투기과열·조정대상·토지거래허가구역(실거주 2년). 시가 15억 이하 주담대 한도 6억, 스트레스 DSR 금리 3%","source":"정책브리핑 10·15 대책","url":"https://www.korea.kr/news/policyNewsView.do?newsId=148950973"}
+]

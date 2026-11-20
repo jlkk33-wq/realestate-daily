@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f5d50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="부동산데일리">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>내 부동산 데일리</title>
+<style>
+:root{--bg:#faf9f5;--panel:#fff;--fg:#1f1e1c;--muted:#6b6862;--line:#e6e3da;--accent:#2f5d50;--ok:#2e7d4f;--bad:#c0392b;
+  --c0:#2f6fb0;--c1:#d97757;--c2:#5a9e6f;--grid:#ecebe6}
+@media (prefers-color-scheme:dark){:root{--bg:#1c1b19;--panel:#262523;--fg:#ecebe6;--muted:#a19e96;--line:#3a3935;--accent:#7fb5a3;--ok:#6cc08b;--bad:#ef7b6c;--c0:#6ea8e0;--c1:#e8956f;--c2:#7fc495;--grid:#33322e}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 12px) 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+header h1{font-size:18px;margin:0;flex:1}
+header .upd{font-size:11px;color:var(--muted);text-align:right}
+button.icon{background:none;border:1px solid var(--line);color:var(--fg);border-radius:10px;padding:6px 10px;font-size:13px}
+main{padding:14px 16px calc(env(safe-area-inset-bottom) + 84px);max-width:760px;margin:0 auto}
+section[hidden]{display:none}
+h2{font-size:15px;margin:22px 0 8px}
+.sub{font-size:12px;color:var(--muted);margin:-4px 0 10px}
+.lead{font-size:15px;line-height:1.6;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.card h3{margin:0 0 6px;font-size:14px;display:flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.big{font-size:28px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:12.5px;margin-top:10px;font-variant-numeric:tabular-nums}
+.kv div{display:flex;justify-content:space-between;gap:6px}.kv span:first-child{color:var(--muted)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.muted{color:var(--muted)}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{fill:var(--muted);font-size:10px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.12);border-radius:8px;padding:5px 8px;font-size:11.5px;white-space:nowrap}
+.list .row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+.list .row:last-child{border-bottom:0}
+.row .t{font-weight:600}.row .amt{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.row .m{font-size:11.5px;color:var(--muted)}
+.tag{font-size:10.5px;padding:1px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-left:4px;font-weight:400}
+.tag.new{border-color:var(--ok);color:var(--ok)}.tag.cx{border-color:var(--bad);color:var(--bad)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:8px;scrollbar-width:none}
+.chips button{flex:none;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:6px 12px;font-size:12.5px}
+.chips button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--panel);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:var(--muted);padding:10px 0 8px;font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+nav button.on{color:var(--accent);font-weight:600}
+.mk{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mk .card{margin:0}
+.mk .v{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.mk .n{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:4px}
+.mk a{font-size:11px;color:var(--accent);text-decoration:none;display:block;margin-top:6px}
+.tl{list-style:none;padding:0;margin:0;font-size:13px}.tl li{padding:7px 0;border-bottom:1px solid var(--line);display:flex;gap:10px}.tl b{min-width:86px;font-variant-numeric:tabular-nums}
+label.f{display:block;font-size:13px;margin:12px 0 4px}
+input.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-size:16px}
+.btn{display:inline-block;margin-top:12px;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:14px}
+.links{display:flex;flex-wrap:wrap;gap:8px}.links a{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;color:var(--fg);text-decoration:none;background:var(--panel)}
+.err{background:#fdecea;color:#8a1f11;border-radius:10px;padding:10px;font-size:13px}
+@media (min-width:640px){.cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.cards3 .card{margin:0}.mk{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>내 부동산 데일리</h1>
+  <div class="upd" id="upd">불러오는 중…</div>
+</header>
+
+<main>
+  <div id="err"></div>
+
+  <section id="tab-home">
+    <p class="lead" id="lead">—</p>
+    <h2>관심 단지 (최근 6개월, 84㎡)</h2>
+    <p class="sub">매매는 해제 제외 중위가, 전세는 신규 계약 중위가</p>
+    <div class="cards3" id="cards"></div>
+    <h2>최근 7일 새 실거래</h2>
+    <div class="card list" id="newDeals"></div>
+    <h2>매매 실거래 추이</h2>
+    <p class="sub">월별 중위가(억)<span class="budgetNote" data-k="buy"></span></p>
+    <div class="card"><div class="chart" id="chTrade"></div></div>
+    <h2>전세 실거래 추이 (신규)</h2>
+    <p class="sub">월별 중위 보증금(억)<span class="budgetNote" data-k="jeonse"></span></p>
+    <div class="card"><div class="chart" id="chJeonse"></div></div>
+  </section>
+
+  <section id="tab-deals" hidden>
+    <h2>실거래 내역</h2>
+    <div class="chips" id="chipKind"></div>
+    <div class="chips" id="chipApt"></div>
+    <div class="card list" id="dealList"></div>
+  </section>
+
+  <section id="tab-market" hidden>
+    <h2>시장 지표</h2>
+    <p class="sub">금리 · 주간 시세 · 대출 규제</p>
+    <div class="mk" id="market"></div>
+    <h2>장안동 아파트 매매 거래량</h2>
+    <p class="sub">월별 신고 건수 (당월은 신고 기한 때문에 적게 잡힘)</p>
+    <div class="card"><div class="chart" id="chVol"></div></div>
+    <h2>내 일정</h2>
+    <div class="card"><ul class="tl">
+      <li><b>~2026-12</b><span>계약갱신청구 가능 기간 끝 · 청구 기록 보관</span></li>
+      <li><b>2026-11-26</b><span>한국은행 금통위 기준금리 결정</span></li>
+      <li><b>2027-02</b><span>현재 전세 만기</span></li>
+      <li><b>2028 하반기</b><span>매수 준비: 대출 사전심사, 자금계획</span></li>
+      <li><b>2029-02</b><span>갱신 시 만기 · 매수 목표 시점</span></li>
+    </ul></div>
+  </section>
+
+  <section id="tab-gj" hidden>
+    <h2>광진구 구의·광장동 전세</h2>
+    <p class="sub" id="gjSub">최근 6개월 · 59~86㎡ · 8억 이하 · 2건 이상</p>
+    <div class="chips" id="chipDong"></div>
+    <div class="card list" id="gjList"></div>
+  </section>
+
+  <section id="tab-set" hidden>
+    <h2>설정</h2>
+    <p class="sub">예산은 이 휴대폰에만 저장되고 서버나 GitHub에는 올라가지 않아요.</p>
+    <div class="card">
+      <label class="f" for="bBuy">매매 예산 (억)</label>
+      <input class="f" id="bBuy" type="number" inputmode="decimal" step="0.1" placeholder="예: 13">
+      <label class="f" for="bJeonse">전세 예산 (억)</label>
+      <input class="f" id="bJeonse" type="number" inputmode="decimal" step="0.1" placeholder="예: 8">
+      <button class="btn" id="save">저장</button> <span id="saved" class="muted" style="font-size:12px"></span>
+    </div>
+    <h2>매물·호가 바로가기</h2>
+    <div class="links">
+      <a href="https://m.land.naver.com/search/result/%EC%9E%A5%EC%95%88%ED%9E%90%EC%8A%A4%ED%85%8C%EC%9D%B4%ED%8A%B8" target="_blank" rel="noopener">장안힐스테이트</a>
+      <a href="https://m.land.naver.com/search/result/%EB%9E%98%EB%AF%B8%EC%95%88%EC%9E%A5%EC%95%882%EC%B0%A8" target="_blank" rel="noopener">래미안장안2차</a>
+      <a href="https://m.land.naver.com/search/result/%EC%9E%A5%EC%95%88%ED%98%84%EB%8C%80%ED%99%88%ED%83%80%EC%9A%B4" target="_blank" rel="noopener">장안현대홈타운</a>
+      <a href="https://m.land.naver.com/search/result/%EA%B5%AC%EC%9D%98%EB%8F%99" target="_blank" rel="noopener">구의동</a>
+      <a href="https://m.land.naver.com/search/result/%EA%B4%91%EC%9E%A5%EB%8F%99" target="_blank" rel="noopener">광장동</a>
+      <a href="https://rt.molit.go.kr" target="_blank" rel="noopener">국토부 실거래가</a>
+    </div>
+    <h2>정보</h2>
+    <p class="sub">실거래: 국토교통부 실거래가 공개 API (매일 아침 6시 43분 자동 갱신). 시장 지표: 언론 보도·공식 페이지 기준. 투자 판단의 근거로 쓰기 전에 원문을 확인하세요.</p>
+  </section>
+</main>
+
+<nav id="nav">
+  <button data-tab="home" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>요약</button>
+  <button data-tab="deals"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>실거래</button>
+  <button data-tab="market"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/></svg>시장</button>
+  <button data-tab="gj"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>광진구</button>
+  <button data-tab="set"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
+</nav>
+
+<script>
+const APTS = ['장안힐스테이트', '래미안장안2차', '장안현대홈타운1차'];
+const COLORS = ['var(--c0)', 'var(--c1)', 'var(--c2)'];
+const S = { kind: '전체', apt: '전체', dong: '전체' };
+let D = null;
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const eok = (manwon) => manwon / 10000;
+const f2 = (v) => v == null || isNaN(v) ? '—' : v.toFixed(2);
+const med = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length ? (s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2) : null; };
+const kstDate = (daysAgo) => new Date(Date.now() + 9 * 3600e3 - daysAgo * 864e5).toISOString().slice(0, 10);
+const store = { get(k) { try { const v = localStorage.getItem(k); return v === null || v === '' ? null : +v; } catch (e) { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
+const budget = () => ({ buy: store.get('budgetBuy'), jeonse: store.get('budgetJeonse') });
+
+async function load() {
+  const names = ['deals84', 'jeonse84', 'volume', 'gwangjin', 'market', 'meta'];
+  const v = Date.now();
+  try {
+    const res = await Promise.all(names.map((n) => fetch(`data/${n}.json?v=${v}`).then((r) => { if (!r.ok) throw new Error(n); return r.json(); })));
+    D = Object.fromEntries(names.map((n, i) => [n, res[i]]));
+    $('err').replaceChildren();
+    render();
+  } catch (e) {
+    $('err').replaceChildren(el('p', 'err', '데이터를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 열어주세요.'));
+  }
+}
+
+function summary() {
+  const from = kstDate(183);
+  return APTS.map((apt) => {
+    const t = D.deals84.filter((d) => d.apt === apt && d.canceled === 'N' && d.date >= from).map((d) => d.price);
+    const j = D.jeonse84.filter((d) => d.apt === apt && d.contract !== '갱신' && d.date >= from).map((d) => d.deposit);
+    const last = D.deals84.find((d) => d.apt === apt && d.canceled === 'N');
+    const tm = med(t), jm = med(j);
+    return { apt, tradeN: t.length, tradeMed: tm && eok(tm), tradeMax: t.length ? eok(Math.max(...t)) : null, jeonseN: j.length, jeonseMed: jm && eok(jm), ratio: tm && jm ? jm / tm * 100 : null, last };
+  });
+}
+
+function render() {
+  const m = D.meta.updatedAt ? D.meta.updatedAt.replace('T', ' ').slice(0, 16) : '';
+  $('upd').textContent = '갱신 ' + m;
+  const B = budget();
+  document.querySelectorAll('.budgetNote').forEach((n) => { const v = B[n.dataset.k]; n.textContent = v ? ` · 점선은 예산 ${v}억` : ''; });
+  renderHome(B); renderDeals(); renderMarket(); renderGJ(B);
+  $('bBuy').value = B.buy ?? ''; $('bJeonse').value = B.jeonse ?? '';
+}
+
+function renderHome(B) {
+  const s = summary();
+  const rows = s.filter((r) => r.tradeMed != null);
+  const lead = $('lead');
+  if (rows.length) {
+    const lo = rows.reduce((a, b) => a.tradeMed <= b.tradeMed ? a : b), hi = rows.reduce((a, b) => a.tradeMed >= b.tradeMed ? a : b);
+    let txt = `최근 6개월 84㎡ 매매 중위가는 ${f2(lo.tradeMed)}억(${lo.apt})~${f2(hi.tradeMed)}억(${hi.apt})입니다.`;
+    if (B.buy) { const u = rows.filter((r) => r.tradeMed <= B.buy); txt += u.length ? ` 예산 ${B.buy}억 안에 드는 곳은 ${u.map((r) => r.apt).join('·')}.` : ` 세 단지 모두 예산 ${B.buy}억을 넘어요.`; }
+    else txt += ' 설정에서 예산을 넣으면 예산 대비 차이도 보여드려요.';
+    lead.textContent = txt;
+  } else lead.textContent = '최근 6개월 84㎡ 매매 거래가 없어요.';
+
+  const cards = $('cards'); cards.replaceChildren();
+  s.forEach((r, i) => {
+    const c = el('div', 'card');
+    const h = el('h3'); const dot = el('span', 'dot'); dot.style.background = COLORS[i]; h.append(dot, r.apt); c.append(h);
+    c.append(el('div', 'big', r.tradeMed == null ? '거래 없음' : f2(r.tradeMed) + '억'));
+    if (B.buy && r.tradeMed != null) { const g = B.buy - r.tradeMed; c.append(el('div', g >= 0 ? 'ok' : 'bad', g >= 0 ? `예산보다 ${f2(g)}억 여유` : `예산 ${f2(-g)}억 초과`)); }
+    const kv = el('div', 'kv');
+    const add = (k, v) => { const d = el('div'); d.append(el('span', null, k), el('span', null, v)); kv.append(d); };
+    add('매매 건수', r.tradeN + '건'); add('최고가', r.tradeMax == null ? '—' : f2(r.tradeMax) + '억');
+    add('최근 거래', r.last ? f2(eok(r.last.price)) + '억' : '—'); add('거래일', r.last ? r.last.date.slice(2) : '—');
+    add('신규 전세', r.jeonseMed == null ? '—' : f2(r.jeonseMed) + '억'); add('전세가율', r.ratio == null ? '—' : r.ratio.toFixed(1) + '%');
+    c.append(kv); cards.append(c);
+  });
+
+  const wk = kstDate(7);
+  const recent = allDeals().filter((d) => d.date >= wk);
+  const box = $('newDeals'); box.replaceChildren();
+  if (!recent.length) box.append(el('p', 'muted', '최근 7일 안에 계약된 새 실거래는 아직 없어요. (실거래는 계약 후 30일 안에 신고돼서 늦게 올라올 수 있어요)'));
+  recent.forEach((d) => box.append(dealRow(d, wk)));
+
+  lineChart($('chTrade'), monthly(D.deals84.filter((d) => d.canceled === 'N'), 'price'), B.buy);
+  lineChart($('chJeonse'), monthly(D.jeonse84.filter((d) => d.contract !== '갱신'), 'deposit'), B.jeonse);
+}
+
+function monthly(rows, field) {
+  const g = {};
+  rows.forEach((d) => { const k = d.apt + '|' + d.date.slice(0, 7); (g[k] = g[k] || []).push(d[field]); });
+  return Object.entries(g).map(([k, v]) => { const [apt, month] = k.split('|'); return { apt, month, v: eok(med(v)), n: v.length }; }).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+function allDeals() {
+  return D.deals84.map((d) => ({ ...d, kind: '매매', amt: d.price, note: d.canceled === 'Y' ? '해제' : '' }))
+    .concat(D.jeonse84.map((d) => ({ ...d, kind: '전세', amt: d.deposit, note: d.contract === '-' ? '' : d.contract })))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+function dealRow(d, wk) {
+  const r = el('div', 'row');
+  const t = el('div', 't', d.apt);
+  if (d.note) t.append(el('span', d.note === '해제' ? 'tag cx' : 'tag', d.note));
+  if (d.date >= wk) t.append(el('span', 'tag new', '신규'));
+  r.append(t, el('div', 'amt', `${d.kind} ${f2(eok(d.amt))}억`));
+  r.append(el('div', 'm', `${d.date} · ${d.area.toFixed(1)}㎡ · ${d.floor}층`), el('div'));
+  return r;
+}
+
+function chips(box, opts, key, onChange) {
+  box.replaceChildren();
+  opts.forEach((o) => { const b = el('button', S[key] === o ? 'on' : '', o); b.onclick = () => { S[key] = o; onChange(); }; box.append(b); });
+}
+
+function renderDeals() {
+  chips($('chipKind'), ['전체', '매매', '전세'], 'kind', renderDeals);
+  chips($('chipApt'), ['전체', ...APTS], 'apt', renderDeals);
+  const wk = kstDate(7);
+  const rows = allDeals().filter((d) => (S.kind === '전체' || d.kind === S.kind) && (S.apt === '전체' || d.apt === S.apt)).slice(0, 150);
+  const box = $('dealList'); box.replaceChildren();
+  if (!rows.length) box.append(el('p', 'muted', '조건에 맞는 거래가 없어요.'));
+  rows.forEach((d) => box.append(dealRow(d, wk)));
+}
+
+function renderMarket() {
+  const box = $('market'); box.replaceChildren();
+  D.market.forEach((r) => {
+    const c = el('div', 'card');
+    c.append(el('div', 'm muted', `${r.group} · ${r.asof}`));
+    c.append(el('h3', null, r.indicator));
+    const v = +r.value, fmt = (x) => x.toFixed(2).replace(/\.00$/, '');
+    c.append(el('div', 'v', (r.group === '시세 흐름' && v > 0 ? '+' : '') + fmt(v) + r.unit));
+    if (r.prev != null) { const diff = v - r.prev; c.append(el('div', 'n', `직전 ${fmt(+r.prev)}${r.unit}` + (Math.abs(diff) < 1e-9 ? ' · 변동 없음' : ` · ${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(2)}%p`))); }
+    c.append(el('div', 'n', r.note));
+    if (/^https:\/\//.test(r.url)) { const a = el('a', null, '출처: ' + r.source); a.href = r.url; a.target = '_blank'; a.rel = 'noopener'; c.append(a); }
+    box.append(c);
+  });
+  barChart($('chVol'), D.volume);
+}
+
+function renderGJ(B) {
+  chips($('chipDong'), ['전체', '구의동', '광장동'], 'dong', () => renderGJ(budget()));
+  const cap = B.jeonse ? Math.min(B.jeonse, 8) : 8;
+  $('gjSub').textContent = `최근 6개월 · 59~86㎡ · 중위가 ${cap}억 이하 · 거래 많은 순`;
+  const rows = D.gwangjin.filter((r) => (S.dong === '전체' || r.dong === S.dong) && eok(r.medianDeposit) <= cap);
+  const box = $('gjList'); box.replaceChildren();
+  if (!rows.length) box.append(el('p', 'muted', '조건에 맞는 단지가 없어요.'));
+  rows.forEach((g) => {
+    const r = el('div', 'row');
+    r.append(el('div', 't', g.apt), el('div', 'amt', f2(eok(g.medianDeposit)) + '억'));
+    r.append(el('div', 'm', `${g.dong} · ${g.buildYear}년 · ${g.mainArea}㎡ · ${g.deals}건 · 최근 ${g.lastDate.slice(2)}`), el('div', 'm', `${f2(eok(g.minDeposit))}~${f2(eok(g.maxDeposit))}`));
+    box.append(r);
+  });
+}
+
+/* ---- 차트 (외부 라이브러리 없이 SVG) ---- */
+const NS = 'http://www.w3.org/2000/svg';
+const sv = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.append(e); return e; };
+function niceTicks(lo, hi, n) { const step0 = (hi - lo) / n, p = Math.pow(10, Math.floor(Math.log10(step0))), step = [1, 2, 2.5, 5, 10].map((m) => m * p).find((s) => s >= step0); const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6)); return out; }
+function tooltip(box) { const t = el('div', 'tip'); t.hidden = true; box.append(t); return (txt, x, y) => { if (txt == null) { t.hidden = true; return; } t.hidden = false; t.textContent = txt; const w = box.clientWidth; t.style.left = Math.max(0, Math.min(x - t.offsetWidth / 2, w - t.offsetWidth)) + 'px'; t.style.top = Math.max(0, y - 38) + 'px'; }; }
+
+function lineChart(box, rows, budgetLine) {
+  box.replaceChildren();
+  if (!rows.length) { box.append(el('p', 'muted', '데이터 없음')); return; }
+  const lg = el('div', 'legend'); APTS.forEach((a, i) => { const s = el('span'); const d = el('span', 'dot'); d.style.background = COLORS[i]; s.append(d, ' ' + a); lg.append(s); }); box.append(lg);
+  const W = Math.max(280, box.clientWidth), H = 220, m = { t: 8, r: 10, b: 22, l: 34 };
+  const months = [...new Set(rows.map((r) => r.month))].sort();
+  const vals = rows.map((r) => r.v).concat(budgetLine ? [budgetLine] : []);
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || 0.5; lo -= pad; hi += pad;
+  const ticks = niceTicks(lo, hi, 4); lo = Math.min(lo, ticks[0]); hi = Math.max(hi, ticks[ticks.length - 1]);
+  const x = (mo) => m.l + (months.length < 2 ? 0 : months.indexOf(mo) / (months.length - 1)) * (W - m.l - m.r);
+  const y = (v) => m.t + (1 - (v - lo) / (hi - lo)) * (H - m.t - m.b);
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '단지별 월별 중위가 추이' }, box);
+  ticks.forEach((t) => { sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--grid)' }, svg); sv('text', { x: m.l - 4, y: y(t) + 3, 'text-anchor': 'end' }, svg).textContent = t; });
+  const every = Math.ceil(months.length / Math.max(2, Math.floor(W / 70)));
+  months.forEach((mo, i) => { if (i % every === 0 || i === months.length - 1) sv('text', { x: x(mo), y: H - 6, 'text-anchor': 'middle' }, svg).textContent = mo.slice(2).replace('-', '.'); });
+  if (budgetLine) { sv('line', { x1: m.l, x2: W - m.r, y1: y(budgetLine), y2: y(budgetLine), stroke: 'var(--muted)', 'stroke-dasharray': '4 4' }, svg); sv('text', { x: W - m.r, y: y(budgetLine) - 4, 'text-anchor': 'end' }, svg).textContent = '예산 ' + budgetLine + '억'; }
+  const tip = tooltip(box);
+  APTS.forEach((a, i) => {
+    const s = rows.filter((r) => r.apt === a);
+    if (!s.length) return;
+    sv('path', { d: s.map((r, k) => (k ? 'L' : 'M') + x(r.month) + ',' + y(r.v)).join(''), fill: 'none', stroke: COLORS[i], 'stroke-width': 2, style: `stroke:${COLORS[i]}` }, svg);
+    s.forEach((r) => { const c = sv('circle', { cx: x(r.month), cy: y(r.v), r: 4, style: `fill:${COLORS[i]}` }, svg); const show = () => { const bb = svg.getBoundingClientRect(), sc = bb.width / W; tip(`${a} · ${r.month} · ${f2(r.v)}억 (${r.n}건)`, x(r.month) * sc, y(r.v) * sc + lg.offsetHeight + 6); }; c.addEventListener('pointerenter', show); c.addEventListener('click', show); c.addEventListener('pointerleave', () => tip(null)); });
+  });
+}
+
+function barChart(box, rows) {
+  box.replaceChildren();
+  const W = Math.max(280, box.clientWidth), H = 190, m = { t: 8, r: 6, b: 22, l: 30 };
+  const hi = Math.max(...rows.map((r) => r.count)); const ticks = niceTicks(0, hi, 4); const top = Math.max(hi, ticks[ticks.length - 1]);
+  const bw = (W - m.l - m.r) / rows.length;
+  const y = (v) => m.t + (1 - v / top) * (H - m.t - m.b);
+  const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': '장안동 월별 매매 거래량' }, box);
+  ticks.forEach((t) => { sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--grid)' }, svg); sv('text', { x: m.l - 4, y: y(t) + 3, 'text-anchor': 'end' }, svg).textContent = t; });
+  const every = Math.ceil(rows.length / Math.max(2, Math.floor(W / 56)));
+  const tip = tooltip(box);
+  rows.forEach((r, i) => {
+    const b = sv('rect', { x: m.l + i * bw + bw * 0.15, width: bw * 0.7, y: y(r.count), height: y(0) - y(r.count), rx: 2, style: 'fill:var(--c0)' }, svg);
+    const show = () => { const sc = svg.getBoundingClientRect().width / W; tip(`${r.month} · ${r.count}건`, (m.l + i * bw + bw / 2) * sc, y(r.count) * sc); };
+    b.addEventListener('pointerenter', show); b.addEventListener('click', show); b.addEventListener('pointerleave', () => tip(null));
+    if (i % every === 0) sv('text', { x: m.l + i * bw + bw / 2, y: H - 6, 'text-anchor': 'middle' }, svg).textContent = r.month.slice(2).replace('-', '.');
+  });
+}
+
+/* ---- 탭, 설정, 앱 설치 ---- */
+function show(tab) {
+  document.querySelectorAll('main section').forEach((s) => { s.hidden = s.id !== 'tab-' + tab; });
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  if (D) render();
+  scrollTo(0, 0);
+  history.replaceState(null, '', '#' + tab);
+}
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));
+$('save').addEventListener('click', () => {
+  const p = (v) => v === '' ? null : +v;
+  store.set('budgetBuy', p($('bBuy').value)); store.set('budgetJeonse', p($('bJeonse').value));
+  $('saved').textContent = '저장했어요'; setTimeout(() => { $('saved').textContent = ''; }, 2000);
+  if (D) render();
+});
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => D && render(), 200); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') load(); });
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+const start = location.hash.slice(1);
+if (['home', 'deals', 'market', 'gj', 'set'].includes(start)) show(start);
+load();
+</script>
+</body>
+</html>
